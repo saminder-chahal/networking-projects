@@ -1,4 +1,4 @@
-  #SAMINDERJIT SINGH CHAHAL                 #CCID-schahal , ALberta#1448705
+#SAMINDERJIT SINGH CHAHAL                
 
 
 #IMPORTANT NOTE : - I have not decreemented the value of TTL ,i assume if TTL value is 1 when it reaches to router so it will drop the packet as we did in our class.
