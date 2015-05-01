@@ -1,4 +1,4 @@
-               #SAMINDERJIT SINGH CHAHAL    CCID-schahal       UofA#1448705
+#SAMINDERJIT SINGH CHAHAL    
 import os, socket, time,sys
 
 IP=sys.argv[1]                     #To declare arguments according to problem given
