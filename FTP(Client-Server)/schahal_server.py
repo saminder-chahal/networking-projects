@@ -1,4 +1,4 @@
-#SAMINDERJIT SINGH CHAHAL         CCID-schahal                UofA#1448705
+#SAMINDERJIT SINGH CHAHAL                        
 #Welcome Message
 print "\nWelcome to packet Switching Simulator \n"                
 print "Please provide <port number to listen at> <directory from where the server serves files to the clients> <log file path>\n"
