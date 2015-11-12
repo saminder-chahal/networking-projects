@@ -105,11 +105,11 @@ class SamController13(app_manager.RyuApp):
             if ev.msg.buffer_id != ofproto.OFP_NO_BUFFER:
                 print "YEah dst with buffer id known \n"
                 self.add_new_flow(datapath=datapath,priority=100,match=match,actions=actions,timeout=30,buffer_id=ev.msg.buffer_id)
+                return
             else:
                 print "DSt known but not buffer_id Sir Note here \n"
                 self.add_new_flow(datapath=datapath,priority=100,match=match,actions=actions,timeout=30)
-        else:   #Else sending packet out (flood) with no data inside
-            print "Flooded packet \n"
-            data=None
-            out=parser.OFPPacketOut(datapath=datapath,buffer_id=ev.msg.buffer_id,in_port=in_port,actions=actions,data=data)
-            datapath.send_msg(out)
+        data = ev.msg.data
+        print "Flooded packet \n"
+        out=parser.OFPPacketOut(datapath=datapath,buffer_id=ev.msg.buffer_id,in_port=in_port,actions=actions,data=data)
+        datapath.send_msg(out)
