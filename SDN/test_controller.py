@@ -22,7 +22,8 @@ class MyController(manager.RyuApp):
 		self.mac_tables = ddict(dict)  # {DPID => {MAC => PORT}}
 		self.arp_table = dict() # {IP => MAC}
 		self.switchports = ddict(dict) # {DPID => {PORTID => PORT_STATUS}}
-        self.stats_requester_thread = hub.spawn(self._port_stats_requester)
+                self.stats_requester_thread = hub.spawn(self._port_stats_requester)
+                self.switches = {}     #{DPID => SWITCH}
 
 	@handler.set_ev_cls(ofp_event.EventOFPPacketIn, handler.MAIN_DISPATCHER)
 	def unknown_flow(self, ev):
@@ -34,7 +35,7 @@ class MyController(manager.RyuApp):
 
 		self.learn(switch, in_port, parsed_data)
 
-		print "PAcket in --->",parsed_data
+		#print "PAcket in --->",parsed_data
 		# Send where?
 		if first_eth.dst in self.mac_tables[switch.id]:
 			out_port = self.mac_tables[switch.id][first_eth.dst]
@@ -67,30 +68,43 @@ class MyController(manager.RyuApp):
 
 	@handler.set_ev_cls(ofp_event.EventOFPSwitchFeatures, handler.CONFIG_DISPATCHER)
 	def unknown_switch(self, ev):
+                switch = ev.msg.datapath
+                #ADD the Switch
+                self.switches[switch.id] = switch                         #Storing datapath corresponding to  datapath.id
+                print self.switches
 		# Build a default rule
 		actions_controller = [parser13.OFPActionOutput(of13.OFPP_CONTROLLER)]
 		instr = [ parser13.OFPInstructionActions(
 						of13.OFPIT_APPLY_ACTIONS,
 						actions_controller) ]
 		# Send it
-		switch = ev.msg.datapath
-		self.send_new_flow(switch=switch, instr=instr, priority=0, timeout=0)
+	        self.send_new_flow(switch=switch, instr=instr, priority=0, timeout=0)
 
 		# Request port status
 		#msg = parser13.OFPPortDescStatsRequest(switch)
 		#switch.send_msg(msg)
-    def _port_stats_requester(self,ev):
-        while True:
-            for dp in ev.msg.datapath:
-                msg = parser13.OFPPortDescStatsRequest(dp)
-                dp.send_msg(msg)
-            hub.sleep(5)
-    @handler.set_ev_cls(ofp_event.EventOFPPortDescStatsReply, handler.MAIN_DISPATCHER)
+	def _port_stats_requester(self):                           #Defining a function to send port stat request every 10 seconds 
+            while True:
+                for dp in self.switchports.keys():
+                    switch = self.switches[dp]                         #Getting datapath from dpid
+                    msg = parser13.OFPPortDescStatsRequest(switch)
+                    switch.send_msg(msg)
+                hub.sleep(5)                                      # Sleeping for five seconds
+        @handler.set_ev_cls(ofp_event.EventOFPPortDescStatsReply, handler.MAIN_DISPATCHER)
 	def port_dump(self, ev):
-        port=[]
-		for p in ev.msg.body:
-			self.switchports[ev.msg.datapath.id][p.port_no] = p.state
-            ports.append('')
+            ports=[]                                                #Creating a port tables storing port statsreplies in it
+	    for p in ev.msg.body:
+                self.switchports[ev.msg.datapath.id][p.port_no] = p.state
+                ports.append('port_no=%d hw_addr=%s name=%s config=0x%08x '
+                     'state=0x%08x curr=0x%08x advertised=0x%08x '
+                     'supported=0x%08x peer=0x%08x curr_speed=%d '
+                     'max_speed=%d' %
+                     (p.port_no, p.hw_addr,
+                      p.name, p.config,
+                      p.state, p.curr, p.advertised,
+                      p.supported, p.peer, p.curr_speed,
+                      p.max_speed))
+            print ("OFPPortDescStatsReply received: %s", ports)
 
 
 	@handler.set_ev_cls(ofp_event.EventOFPPortStatus, handler.MAIN_DISPATCHER)
@@ -145,7 +159,7 @@ class MyController(manager.RyuApp):
 
 	def learn(self, switch, in_port, parsed_data):
 		first_eth = parsed_data.get_protocols(eth.ethernet)[0]
-                print first_eth
+                #print first_eth
 		# Learn source IP to MAC
 		if first_eth.ethertype == ether_types.ETH_TYPE_ARP:
 			arp_header = parsed_data.get_protocols(arp.arp)[0]
