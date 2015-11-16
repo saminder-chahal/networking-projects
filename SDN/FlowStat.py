@@ -86,26 +86,27 @@ class MyController(manager.RyuApp):
 		msg = parser13.OFPPortDescStatsRequest(switch)
 		switch.send_msg(msg)
                 print "Port Stat Req is " , switch.send_msg(msg)
-	def _flow_stats_requester(self):      #Defining a function to send port stat request every 10 seconds
-            while True:
-                for dp in self.switchports.keys():
-                    switch = self.switches[dp]                         #Getting datapath from dpid
-                    cookie = cookie_mask = 0
-                    match = parser13.OFPMatch(in_port = 1)
-                    msg = parser13.OFPFlowStatsRequest(switch, 0, of13.OFPTT_ALL, of13.OFPP_ANY, of13.OFPG_ANY, cookie, cookie_mask, match)
-                    switch.send_msg(msg)
-                    print "FLOW STAT REQUEST MESSAGE IS " , switch.send_msg(msg) , dp
-                hub.sleep(3)                                      # Sleeping for five seconds
+	
         @handler.set_ev_cls(ofp_event.EventOFPPortDescStatsReply, handler.MAIN_DISPATCHER)
 	def port_dump(self, ev):
+            #ports=[]                                                #Creating a port tables storing port statsreplies in it
 	    for p in ev.msg.body:
-            self.switchports[ev.msg.datapath.id][p.port_no] = p.state
-                
+                self.switchports[ev.msg.datapath.id][p.port_no] = p.state
+                """ports.append('port_no=%d hw_addr=%s name=%s config=0x%08x '
+                     'state=0x%08x curr=0x%08x advertised=0x%08x '
+                     'supported=0x%08x peer=0x%08x curr_speed=%d '
+                     'max_speed=%d' %
+                     (p.port_no, p.hw_addr,
+                      p.name, p.config,
+                      p.state, p.curr, p.advertised,
+                      p.supported, p.peer, p.curr_speed,
+                      p.max_speed))"""
+            #print ("OFPPortDescStatsReply received: %s", ports)
 
         @handler.set_ev_cls(ofp_event.EventOFPFlowStatsReply, handler.MAIN_DISPATCHER)
         def flow_stat_reply(self, ev):
                 for stat in ev.msg.body:
-                        self.flows.append('table_id=%s '
+                       self.flows.append('table_id=%s '
                      'duration_sec=%d duration_nsec=%d '
                      'priority=%d '
                      'idle_timeout=%d hard_timeout=%d flags=0x%04x '
@@ -118,9 +119,8 @@ class MyController(manager.RyuApp):
                       stat.cookie, stat.packet_count, stat.byte_count,
                       stat.match, stat.instructions))
 
-                
 
-	@handler.set_ev_cls(ofp_event.EventOFPPortStatus, handler.MAIN_DISPATCHER)
+        @handler.set_ev_cls(ofp_event.EventOFPPortStatus, handler.MAIN_DISPATCHER)
 	def port_status(self, ev):
 		p = ev.msg.desc
 		if ev.msg.reason == of13.OFPPR_DELETE:
@@ -137,6 +137,18 @@ class MyController(manager.RyuApp):
 			print "Port", ev.msg.datapath.id, "-", p.port_no, "DOWN"
 		elif p.state == 0:
 			print "Port", ev.msg.datapath.id, "-", p.port_no, "UP"
+
+        def _flow_stats_requester(self):      #Defining a function to send port stat request every 10 seconds
+            while True:
+                print "HHH" , self.switchports.keys()
+                for dp in self.switchports.keys():
+                    switch = self.switches[dp]                         #Getting datapath from dpid
+                    cookie = cookie_mask = 0
+                    match = parser13.OFPMatch()
+                    msg = parser13.OFPFlowStatsRequest(switch, 0, of13.OFPTT_ALL, of13.OFPP_ANY, of13.OFPG_ANY, cookie, cookie_mask, match)
+                    switch.send_msg(msg)
+                    print "FLOW STAT REQUEST MESSAGE IS " , switch.send_msg(msg) , dp
+                hub.sleep(3)                                      # Sleeping for five seconds
 
 	def send_packet_out(self,
 						switch,
@@ -187,3 +199,5 @@ class MyController(manager.RyuApp):
 		#print "MAC > ", self.mac_tables
 		#print "IP >", self.arp_table
 		#print "PORT >", self.switchports
+		
+		
