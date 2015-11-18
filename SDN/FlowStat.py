@@ -10,6 +10,7 @@ from ryu.lib.packet import arp
 from ryu.lib.packet import ipv4
 from collections import defaultdict as ddict
 from ryu.lib import hub
+import threading
 
 class MyController(manager.RyuApp):
 	OFP_VERSIONS = [of13.OFP_VERSION]
@@ -24,12 +25,16 @@ class MyController(manager.RyuApp):
 		self.switchports = ddict(dict) # {DPID => {PORTID => PORT_STATUS}}
                 self.stats_requester_thread = hub.spawn(self._flow_stats_requester)
                 self.switches = {}     #{DPID => SWITCH}
-                self.flows = []
+                self.flows = dict()        #{DPID => Flows}
+
+        def flowstats(self):
+                print "Length fo flow stat table is", len(self.flows)
+                print "Flow Stats Reply is :" ,self.flows
+                
 
 	@handler.set_ev_cls(ofp_event.EventOFPPacketIn, handler.MAIN_DISPATCHER)
 	def unknown_flow(self, ev):
-                print ("Flow Stat Reply is: " , self.flows)
-		switch = ev.msg.datapath
+                switch = ev.msg.datapath
 		data = ev.msg.data
 		parsed_data = packet.Packet(data)
 		in_port = ev.msg.match['in_port']
@@ -67,13 +72,17 @@ class MyController(manager.RyuApp):
 			else:
 				# or just send a packet out, without a rule
 				self.send_packet_out(switch, out_port=out_port, buffer_id=ev.msg.buffer_id, actions=actions, in_port=in_port)
+                t1=threading.Thread(target=self.flowstats(), args=[])
+                t1.start()
+                t1.join()
 
 	@handler.set_ev_cls(ofp_event.EventOFPSwitchFeatures, handler.CONFIG_DISPATCHER)
 	def unknown_switch(self, ev):
+                print "OOOLLLLLAAAALLALALLALALLALALALALalLLALLALALLALLALALA"
                 switch = ev.msg.datapath
                 #ADD the Switch
                 self.switches[switch.id] = switch                         #Storing datapath corresponding to  datapath.id
-                print self.switches
+                #print self.switches
 		# Build a default rule
 		actions_controller = [parser13.OFPActionOutput(of13.OFPP_CONTROLLER)]
 		instr = [ parser13.OFPInstructionActions(
@@ -85,7 +94,10 @@ class MyController(manager.RyuApp):
 		# Request port status
 		msg = parser13.OFPPortDescStatsRequest(switch)
 		switch.send_msg(msg)
-                print "Port Stat Req is " , switch.send_msg(msg)
+                #print "Port Stat Req is " , switch.send_msg(msg)
+      
+                #Reset switch flows stats
+                self.flows = {}
 	
         @handler.set_ev_cls(ofp_event.EventOFPPortDescStatsReply, handler.MAIN_DISPATCHER)
 	def port_dump(self, ev):
@@ -106,7 +118,7 @@ class MyController(manager.RyuApp):
         @handler.set_ev_cls(ofp_event.EventOFPFlowStatsReply, handler.MAIN_DISPATCHER)
         def flow_stat_reply(self, ev):
                 for stat in ev.msg.body:
-                       self.flows.append('table_id=%s '
+                        flow=('table_id=%s '
                      'duration_sec=%d duration_nsec=%d '
                      'priority=%d '
                      'idle_timeout=%d hard_timeout=%d flags=0x%04x '
@@ -118,6 +130,9 @@ class MyController(manager.RyuApp):
                       stat.idle_timeout, stat.hard_timeout, stat.flags,
                       stat.cookie, stat.packet_count, stat.byte_count,
                       stat.match, stat.instructions))
+                        self.flows[ev.msg.datapath.id]=flow
+                       
+                       
 
 
         @handler.set_ev_cls(ofp_event.EventOFPPortStatus, handler.MAIN_DISPATCHER)
@@ -126,7 +141,7 @@ class MyController(manager.RyuApp):
 		if ev.msg.reason == of13.OFPPR_DELETE:
 			print "Port", ev.msg.datapath.id, "-", p.port_no, "DELETED"
 			del self.switchports[ev.msg.datapath.id][p.port_no]
-                        return
+                        return 
 		elif ev.msg.reason == of13.OFPPR_ADD:
 			print "Port", ev.msg.datapath.id, "-", p.port_no, "ADDED"
 		elif ev.msg.reason == of13.OFPPR_MODIFY:
@@ -138,16 +153,23 @@ class MyController(manager.RyuApp):
 		elif p.state == 0:
 			print "Port", ev.msg.datapath.id, "-", p.port_no, "UP"
 
+        @handler.set_ev_cls(ofp_event.EventOFPStateChange, handler.DEAD_DISPATCHER)
+        def state_change_handler(self,ev):
+            dp = ev.datapath
+            if dp.id is None:
+                print "yo"
+               
+
         def _flow_stats_requester(self):      #Defining a function to send port stat request every 10 seconds
             while True:
-                print "HHH" , self.switchports.keys()
+                #print "HHH" , self.switchports.keys()
                 for dp in self.switchports.keys():
                     switch = self.switches[dp]                         #Getting datapath from dpid
                     cookie = cookie_mask = 0
                     match = parser13.OFPMatch()
                     msg = parser13.OFPFlowStatsRequest(switch, 0, of13.OFPTT_ALL, of13.OFPP_ANY, of13.OFPG_ANY, cookie, cookie_mask, match)
                     switch.send_msg(msg)
-                    print "FLOW STAT REQUEST MESSAGE IS " , switch.send_msg(msg) , dp
+                    #print "FLOW STAT REQUEST MESSAGE IS " , switch.send_msg(msg) , dp
                 hub.sleep(3)                                      # Sleeping for five seconds
 
 	def send_packet_out(self,
