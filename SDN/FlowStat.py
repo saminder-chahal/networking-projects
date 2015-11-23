@@ -1,3 +1,5 @@
+"This controller performs all L2 switching operations succesfully for non-reduntant networks and is compatible with protocol OpenFlow13 only.It creates a new thread which sends flow stat request every 3 seconds and new flow stat replies are printed on everypacket in, copy of all flow stat replies is created in .csv file with dpid ==> flow_stats mapping whose path is displayed on every packet in. "
+
 from ryu.base import app_manager as manager
 from ryu.controller import handler
 from ryu.controller import ofp_event
@@ -16,26 +18,29 @@ import csv,os
 
 class MyController(manager.RyuApp):
 	OFP_VERSIONS = [of13.OFP_VERSION]
-	DEF_PRI = 100
+        DEF_PRI = 100
 	DEF_TIMEOUT = 30
 
 
         def __init__(self, *args, **kwargs):
-		super(MyController, self).__init__(*args, **kwargs)    # Mandatory
+                super(MyController, self).__init__(*args, **kwargs)    # Mandatory
                 self.mac_tables = ddict(dict)             # {DPID => {MAC => PORT}}
 		self.arp_table = dict()                   # {IP => MAC}
-		self.switchports = ddict(dict)  # {DPID => {PORTID => PORT_STATUS}}
-                self.stats_requester_thread = hub.spawn(self._flow_stats_requester) #Creating a new thread and calling function
-                self.switches = {}                                #{DPID => SWITCH}
-                self.flows = dict()                               #{DPID => Flows}
-                self.flow_stat_file = []                          #Storing the time values when new switches added to topo.
+		self.switchports = ddict(dict)  # {DPID => {PORTID => PORT States}}
+                
+                #Creating a new thread and calling function for flow stat request 
+                self.stats_requester_thread = hub.spawn(self._flow_stats_requester) 
+                
+                self.switches = {}                    #{DPID => SWITCH}
+                self.flows = dict()                  #{DPID => Flows} only stores new flow stat replies
+                self.flow_stat_file = []   #Storing the time values when new switches added to topo.
 
         #Event handler when switches are added to controller
         @handler.set_ev_cls(ofp_event.EventOFPSwitchFeatures, handler.CONFIG_DISPATCHER)
 	def unknown_switch(self, ev):
                 switch = ev.msg.datapath
                 #ADD the Switch
-                self.switches[switch.id] = switch #Storing datapath corresponding to dpid
+                self.switches[switch.id] = switch #Storing switch datapath corresponding to dpid
 
 
                 # Build a default rule
@@ -54,11 +59,11 @@ class MyController(manager.RyuApp):
 		switch.send_msg(msg)
 
 
-                #Reset switch flows stats table for new topology.
+                #Reset switch flows stats table for new topology or new switch added.
                 self.flows = {}
 
 
-                #Calling a function to get new time when switches added and append that in flow stat file.
+                #Calling a function to get new time when switches added and append them in flow_stat_file.
                 new_file_time = self.flow_file_generator()
                 self.flow_stat_file.append(new_file_time)   
 
@@ -115,7 +120,9 @@ class MyController(manager.RyuApp):
 
                 #Printing flow stats for every packet in.
                 print "New flow stats reply with SW.ID : current flows stats: \n", self.flows , "\n"
-                new_file_t = self.flow_stat_file[-1]             #getting last time value when switches added from flow stat file
+                
+                #Printing name and path of complete flow stat file for every packet in             
+                new_file_t = self.flow_stat_file[-1]     
                 print "For complete flow stats replies please open Sam-" + str(new_file_t) +".csv" + " in " +os.getcwd() + "/ \n\n\n"
 
 
@@ -130,25 +137,22 @@ class MyController(manager.RyuApp):
         @handler.set_ev_cls(ofp_event.EventOFPFlowStatsReply, handler.MAIN_DISPATCHER)
         def flow_stat_reply(self, ev):
                 for stat in ev.msg.body:
-                        flow=('table_id = %s '
-                     'duration_sec = %d duration_nsec = %d '
-                     'priority = %d '
-                     'idle_timeout = %d hard_timeout = %d flags = 0x%04x '
-                     'cookie = %d packet_count = %d byte_count = %d '
-                     'match = %s instructions = %s' %
-                     (stat.table_id,
-                      stat.duration_sec, stat.duration_nsec,
-                      stat.priority,
-                      stat.idle_timeout, stat.hard_timeout, stat.flags,
-                      stat.cookie, stat.packet_count, stat.byte_count,
-                      stat.match, stat.instructions))
-                        self.flows[ev.msg.datapath.id] = flow           #Adding new flow reply
+                        flow=('table_id = %s ''duration_sec = %d duration_nsec = %d '
+                     'priority = %d ''idle_timeout = %d hard_timeout = %d flags = 0x%04x '
+                     'cookie = %d packet_count = %d byte_count = %d ''match = %s instructions = %s' %
+                     (stat.table_id, stat.duration_sec, stat.duration_nsec, stat.priority,
+                      stat.idle_timeout, stat.hard_timeout, stat.flags, stat.cookie, stat.packet_count, 
+                      stat.byte_count, stat.match, stat.instructions))
+                        
+                        #Adding new flow reply to self.flows.
+                        self.flows[ev.msg.datapath.id] = flow         
 
+                        
                         #Storing all flow replies in .csv file with dpid ==> flow mapping.
-                        new_file_t = self.flow_stat_file[-1]      #getting last time value when switches added from flow stat file 
-                        sam = (open("Sam -" + str(new_file_t) +".csv","a"))   #Storing flow stats in .csv file
-                        newfile = csv.writer(sam)
-                        newfile.writerow([ev.msg.datapath.id, flow])
+                        new_file_t = self.flow_stat_file[-1]      #getting last time when switches added from flow_stat_file 
+                        sam = (open("Sam -" + str(new_file_t) +".csv","a"))  
+                        newfile = csv.writer(sam)                  
+                        newfile.writerow([ev.msg.datapath.id, flow])   #Storing flow stats in .csv file
                         sam.close()                #closing the file
 
 
@@ -165,7 +169,8 @@ class MyController(manager.RyuApp):
 		elif ev.msg.reason == of13.OFPPR_MODIFY:
 			print "Switch", ev.msg.datapath.id, "- port", p.port_no, "MODIFIED"
 
-		self.switchports[ev.msg.datapath.id][p.port_no] = p.state
+		#Updating switchports table with new port states
+                self.switchports[ev.msg.datapath.id][p.port_no] = p.state
 		if p.state == 1:
 			print "Switch", ev.msg.datapath.id, "- port", p.port_no, "DOWN"
 		elif p.state == 0:
@@ -220,7 +225,7 @@ class MyController(manager.RyuApp):
 		self.mac_tables[switch.id][first_eth.src] = in_port
 
 
-        #Returning a new file time for flow stat file
+        #Returning the time when switch/switches added
         def flow_file_generator(self):
             Current_time = strftime("%Y-%m-%d %H-%M-%S", gmtime())
             print "Current time when switches added is :",Current_time
