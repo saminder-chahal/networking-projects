@@ -3,7 +3,9 @@ Designed and developed a layer 3 switch application using Ryu SDN controller, mi
 Algorithm: Controller remembers all the switches connected. After boot a new thread is connected for a function that polls switches for FlowStats, every 3 seconds. Stat replies are stored and printed out on a screen on every packetin.
 
 ENVIRONMENT SETUP:
-    1. Install Ubuntu or other linux operating system.(http://www.ubuntu.com/download/desktop)
+
+
+    1. Install Ubuntu or other linux operating system. (http://www.ubuntu.com/download/desktop)
     
     2. Install Git by typing "sudo apt-get install git" in the terminal.
     
