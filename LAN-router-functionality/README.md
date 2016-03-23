@@ -33,7 +33,7 @@ For each received packet, our program will:
       * if there is no matching entry, the packet will be dropped and the "unroutable packets" counter will be updated
 * if the value of the nexthop field for the entry is 0:
       * print the following:
-          Delivering direct: packet ID=<packet ID>, dest=<dest. IP address>
+        Delivering direct: packet ID="packet ID", dest="dest. IP address"
       * update the "delivered direct" counter
 * if the value of the nexthop field is Router B or C
       * update the counter corresponding to the packets forwarded to that router
