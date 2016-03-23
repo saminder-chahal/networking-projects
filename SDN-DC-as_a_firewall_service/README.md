@@ -35,8 +35,7 @@ ENVIRONMENT SETUP:
 IMPLEMENTATION:
  1. Type “sudo mn –controller=remote –topo=single, 4 –mac” to create a single switch with four hosts on Mininet in the Terminal.
  2. Now with mininet running in one terminal , open the other terminal and go inside the pox repository and type “python pox.py   log.level –DEBUG forwarding.l2_learning” to run the pox controller to connect to the mininet using OpenFlow protocol.
- 3. Verify end to end connectivity by typing "pingall" in mininet console. At this point every host should communicate with other   
-    hosts over the network we created.
+ 3. Verify end to end connectivity by typing "pingall" in mininet console. At this point every host should communicate with other hosts over the network we created.  
  4. Now, to implement our Firewall orchestration, copy and paste the Firewall.py file of this project inside the pox controller   
     repository at /pox/pox/forwarding location.
  5. Finally, paste our Firewall rules file inside the pox repository from where we run our pox controller and our job is done.
