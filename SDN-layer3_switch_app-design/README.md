@@ -4,9 +4,12 @@ Algorithm: Controller remembers all the switches connected. After boot a new thr
 
 ENVIRONMENT SETUP:
     1. Install Ubuntu or other linux operating system.(http://www.ubuntu.com/download/desktop)
+    
     2. Install Git by typing "sudo apt-get install git" in the terminal.
+    
     3. Install Mininet: Mininet is a network emulator which can create a network of hosts, links and switches on a single machine.              Installing the mininet from github is very easy use the following command from your home directory to install it:
        "git clone https://github.com/mininet/mininet.git"
+       
     4. Install SDN POX Controller by typing "git clone https://github.com/noxrepo/pox.git"
 
 After we are done, typing "sudo mn" from inside the mininet directory should create a default mininet topology. Then run Ryu controller from other terminals and they should connect to each other using port 6633 by default.
