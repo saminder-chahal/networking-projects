@@ -1,0 +1,7 @@
+SDN created the whole new world of network design and enabled the innovative approaches to networking due to the separation of control plane and the data plane. Thus, SDN also caused us to reconsider how the security policies are enforced in the network.
+Open vSwitch has traditionally supported only stateless matches on the policies. However, work is being done by the Open vSwitch community to have connection tracking to maintain the state tables of existing sessions. If any organisation requires the stateful firewall protections specifically, then they must use the SDN policies to steer the traffic with service-chaining toward a stateful packet inspection Network Function Virtualization (NFV) firewall.
+I deployed the firewall as a service for hierarchical multi-tenant Data Center network by provisioning rules to allow specific source MAC addresses to communicate specific Tenants while resolving the conflict between the standard programmed flow and Firewall programmed flows.
+My research work can be divided into following key points:
+ Deploy Hierarchical multi-Tenant Data Center network in the automated manner using Mininet Python API infrastructure simulation.
+ Then deploy Python based SDN Controller (POX) in layer 2 switch mode and verify end to end connectivity of the hosts.
+ Finally deploy the firewall plugin in the layer 2 switch controller which installs the firewall flow rules by reading the csv file containing the rules taking care to resolve the conflicts between standard programmed flow and firewall programed flows.
