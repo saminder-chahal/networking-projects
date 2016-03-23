@@ -16,4 +16,4 @@ ENVIRONMENT SETUP:
 
 After we are done, typing "sudo mn" from inside the mininet directory should create a default mininet topology. Then run Ryu controller by typing "ryu-manager ~/simple_switch_12.py" from other terminals and they should connect to each other using port 6633 by default.
 
-Then, keep on changing the mininet topologies to single switch four hosts; mesh topologies; linear topologies etc and my controller performs all the layer2 and layer3 switching operations while printing the flow stats every 3 seconds on the controller console.
+Then, keep on changing the mininet topologies to single switch four hosts; mesh topologies; linear topologies etc and my controller "FlowStat.py" performs all the layer2 and layer3 switching operations while printing the flow stats every 3 seconds on the controller console.
