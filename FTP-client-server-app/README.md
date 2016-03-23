@@ -11,9 +11,11 @@ IMPLEMENTATION
 
 SERVER:
 $python schahal_server 9090 /some/where/documents /some/where/logfile
+
 This would invoke file_server listening on the local machine on port 9090, serving up files from the directory /some/where/documents, 
 and logging transactions to /some/where/logfile.
 
 CLIENT:
 $python schahal_client 192.168.10.1 9090 filename
+
 This would invoke file_client sending a transfer request of filename to the server running on 192.168.10.1 and listening to UDP port 9090.
