@@ -12,8 +12,8 @@ ENVIRONMENT SETUP:
     3. Install Mininet: Mininet is a network emulator which can create a network of hosts, links and switches on a single machine. Installing the mininet from github is very easy use the following command from your home directory to install it:
        "git clone https://github.com/mininet/mininet.git"
        
-    4. Install SDN POX Controller by typing "git clone https://github.com/noxrepo/pox.git"
+    4. Install SDN Ryu Controller by typing "git clone git://github.com/osrg/ryu.git"
 
-After we are done, typing "sudo mn" from inside the mininet directory should create a default mininet topology. Then run Ryu controller from other terminals and they should connect to each other using port 6633 by default.
+After we are done, typing "sudo mn" from inside the mininet directory should create a default mininet topology. Then run Ryu controller by typing "ryu-manager ~/simple_switch_12.py" from other terminals and they should connect to each other using port 6633 by default.
 
 Then, keep on changing the mininet topologies to single switch four hosts; mesh topologies; linear topologies etc and my controller performs all the layer2 and layer3 switching operations while printing the flow stats every 3 seconds on the controller console.
