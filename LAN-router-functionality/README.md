@@ -20,8 +20,8 @@ The router program will:
       * 192.224.0.0 255.255.0.0 RouterC.
       * A 0‐value of nexthop means a direct delivery of a packet to a host within network A.
  * listen to the specified UDP port
-*  accept simplified IP packets in the format:
-  <packet ID>, <source IP>, <destination IP>, <TTL>, <payload>
+ * accept simplified IP packets in the format:
+   <packet ID>, <source IP>, <destination IP>, <TTL>, <payload>
    Example: 215, 192.168.192.4, 192.224.0.7, 64, testing
 
 For each received packet, our program will:
