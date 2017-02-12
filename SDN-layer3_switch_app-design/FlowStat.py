@@ -5,6 +5,7 @@ replies is created in .csv file with dpid ==> flow_stats mapping whose path is d
 packet in. 
 """
 
+import csv,os
 from ryu.base import app_manager as manager
 from ryu.controller import handler
 from ryu.controller import ofp_event
@@ -18,14 +19,12 @@ from ryu.lib.packet import ipv4
 from collections import defaultdict as ddict
 from ryu.lib import hub
 from time import gmtime, strftime
-import csv,os
 
 
 class MyController(manager.RyuApp):
 	OFP_VERSIONS = [of13.OFP_VERSION]
         DEF_PRI = 100
 	DEF_TIMEOUT = 30
-
 
         def __init__(self, *args, **kwargs):
                 super(MyController, self).__init__(*args, **kwargs)    # Mandatory
@@ -47,31 +46,25 @@ class MyController(manager.RyuApp):
                 #ADD the Switch
                 self.switches[switch.id] = switch #Storing switch datapath corresponding to dpid
 
-
                 # Build a default rule
 		actions_controller = [parser13.OFPActionOutput(of13.OFPP_CONTROLLER)]
 		instr = [ parser13.OFPInstructionActions(
 						of13.OFPIT_APPLY_ACTIONS,
 						actions_controller) ]
 
-
 		# Calling function to add default flow to switch
 	        self.send_new_flow(switch = switch, instr = instr, priority = 0, timeout = 0)
-
 
                 # Sending port status request
 		msg = parser13.OFPPortDescStatsRequest(switch)
 		switch.send_msg(msg)
 
-
                 #Reset switch flows stats table for new topology or new switch added.
                 self.flows = {}
-
 
                 #Calling a function to get new time when switches added and append them in flow_stat_file.
                 new_file_time = self.flow_file_generator()
                 self.flow_stat_file.append(new_file_time)   
-
 
 
         #Event handler for the packets coming to the controller        
@@ -83,10 +76,8 @@ class MyController(manager.RyuApp):
 		in_port = ev.msg.match['in_port']
 		first_eth = parsed_data.get_protocols(eth.ethernet)[0]
 
-
                 #Calling function to update arp and mac tables
                 self.learn(switch, in_port, parsed_data)
-
 
                 # Send where?
 		if first_eth.dst in self.mac_tables[switch.id]:
@@ -94,14 +85,12 @@ class MyController(manager.RyuApp):
 		else:
 			out_port = of13.OFPP_FLOOD
 
-
                 # Flow definition
 		match = parser13.OFPMatch(in_port = in_port , eth_dst = first_eth.dst)
                 actions = [ parser13.OFPActionOutput(out_port) ]
 		instr = [ parser13.OFPInstructionActions(
 						of13.OFPIT_APPLY_ACTIONS,
 						actions) ]
-
 
                 # Do we use BID?
 		if ev.msg.buffer_id == of13.OFP_NO_BUFFER:    # We got no buffer_id
@@ -130,13 +119,11 @@ class MyController(manager.RyuApp):
                 new_file_t = self.flow_stat_file[-1]     
                 print "For complete flow stats replies please open Sam-" + str(new_file_t) +".csv" + " in " +os.getcwd() + "/ \n\n\n"
 
-
         #Event handler to reply to port status request
 	@handler.set_ev_cls(ofp_event.EventOFPPortDescStatsReply, handler.MAIN_DISPATCHER)
 	def port_dump(self, ev):
              for p in ev.msg.body:
                 self.switchports[ev.msg.datapath.id][p.port_no] = p.state
-
 
         #Event handler to reply to flow stat request 
         @handler.set_ev_cls(ofp_event.EventOFPFlowStatsReply, handler.MAIN_DISPATCHER)
@@ -151,7 +138,6 @@ class MyController(manager.RyuApp):
                         
                         #Adding new flow reply to self.flows.
                         self.flows[ev.msg.datapath.id] = flow         
-
                         
                         #Storing all flow replies in .csv file with dpid ==> flow mapping.
                         new_file_t = self.flow_stat_file[-1]      #getting last time when switches added from flow_stat_file 
@@ -159,7 +145,6 @@ class MyController(manager.RyuApp):
                         newfile = csv.writer(sam)                  
                         newfile.writerow([ev.msg.datapath.id, flow])   #Storing flow stats in .csv file
                         sam.close()                #closing the file
-
 
         #Event handler if ports status is changed (port added ,deleted or modified)
         @handler.set_ev_cls(ofp_event.EventOFPPortStatus, handler.MAIN_DISPATCHER)
@@ -181,7 +166,6 @@ class MyController(manager.RyuApp):
 		elif p.state == 0:
 			print "Switch", ev.msg.datapath.id, "- port", p.port_no, "UP"
 
-
         #Defining a function to send port stat request every three seconds 
         def _flow_stats_requester(self): 
             while True:
@@ -194,7 +178,6 @@ class MyController(manager.RyuApp):
                     switch.send_msg(msg)
                 hub.sleep(3)                        # Sleeping for three seconds
 
-
         #Sending packet out
 	def send_packet_out(self,switch,out_port = of13.OFPP_FLOOD,data = None,
 			    buffer_id = of13.OFP_NO_BUFFER,actions = [],in_port = 0):
@@ -203,7 +186,6 @@ class MyController(manager.RyuApp):
                            buffer_id = buffer_id,actions = actions,in_port = in_port)
 		switch.send_msg(msg)
 
-
         #Adding new flow to switch
 	def send_new_flow(self,switch,out_port = of13.OFPP_FLOOD, match = parser13.OFPMatch(),
 	     instr = [],priority = DEF_PRI, timeout = DEF_TIMEOUT, buffer_id = of13.OFP_NO_BUFFER):
@@ -211,11 +193,9 @@ class MyController(manager.RyuApp):
                               idle_timeout = timeout,priority = priority, buffer_id = buffer_id)
 		switch.send_msg(msg)
 
-
         #Updating arp table and mac table
 	def learn(self, switch, in_port, parsed_data):
 		first_eth = parsed_data.get_protocols(eth.ethernet)[0]
-
 
 		#Learn IP => Mac
                 if first_eth.ethertype == ether_types.ETH_TYPE_ARP:
@@ -225,19 +205,12 @@ class MyController(manager.RyuApp):
 			ip_header = parsed_data.get_protocols(ipv4.ipv4)[0]
 			self.arp_table[ip_header.src] = first_eth.src
 
-
                 # Learn source MAC to SW_PORT 
 		self.mac_tables[switch.id][first_eth.src] = in_port
 
 
         #Returning the time when switch/switches added
         def flow_file_generator(self):
-            Current_time = strftime("%Y-%m-%d %H-%M-%S", gmtime())
+            current_time = strftime("%Y-%m-%d %H-%M-%S", gmtime())
             print "Current time when switches added is :",Current_time
-            return Current_time
-
-
-
-		
-		
-		
+            return current_time
