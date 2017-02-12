@@ -1,4 +1,9 @@
-"This controller performs all L2 switching operations succesfully for non-reduntant networks and is compatible with protocol OpenFlow13 only.It creates a new thread which sends flow stat request every 3 seconds and new flow stat replies are printed on everypacket in, copy of all flow stat replies is created in .csv file with dpid ==> flow_stats mapping whose path is displayed on every packet in. "
+"""This controller performs all L2 switching operations succesfully for non-reduntant networks and 
+is compatible with protocol OpenFlow13 only.It creates a new thread which sends flow stat request 
+every 3 seconds and new flow stat replies are printed on everypacket in, copy of all flow stat 
+replies is created in .csv file with dpid ==> flow_stats mapping whose path is displayed on every 
+packet in. 
+"""
 
 from ryu.base import app_manager as manager
 from ryu.controller import handler
